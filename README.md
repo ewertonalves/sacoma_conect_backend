@@ -576,12 +576,3 @@ gradlew clean build
 ```
 
 O arquivo WAR será gerado em `build/libs/administrativo-0.0.1-SNAPSHOT.war`
-
-## Suporte e Contato
-
-Para dúvidas ou problemas, consulte a documentação Swagger ou entre em contato com a equipe de desenvolvimento.
-
----
-
-**Versão**: 0.0.1-SNAPSHOT  
-**Última Atualização**: Janeiro 2026
