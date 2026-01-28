@@ -1,0 +1,1548 @@
+# Especificação Técnica - Frontend Sistema Administrativo
+# Versão: 1.0.0
+# Data: 2024
+
+project:
+  name: "Sistema Administrativo - Frontend"
+  description: "Aplicação web para gerenciamento administrativo"
+  version: "1.0.0"
+  baseUrl: "http://localhost:8080/api"
+
+# ============================================
+# ARQUITETURA E TECNOLOGIAS
+# ============================================
+
+architecture:
+  pattern: "Feature-Sliced Design (FSD)"
+  description: "Arquitetura modular e escalável baseada em features"
+  
+  layers:
+    - name: "app"
+      description: "Camada de aplicação - configurações globais, providers, roteamento"
+      responsibilities:
+        - Configuração de rotas
+        - Providers globais (Auth, Theme, Toast)
+        - Layout principal
+        - Interceptores HTTP
+        
+    - name: "features"
+      description: "Camada de features - funcionalidades específicas do negócio"
+      structure:
+        - auth/
+        - usuarios/
+        - membros/
+        - financeiro/
+      responsibilities:
+        - Lógica de negócio específica
+        - Componentes de feature
+        - Hooks customizados
+        - Stores/State management
+        
+    - name: "entities"
+      description: "Camada de entidades - modelos de dados e componentes reutilizáveis"
+      structure:
+        - usuario/
+        - membro/
+        - financeiro/
+        - endereco/
+      responsibilities:
+        - Modelos de dados (types/interfaces)
+        - Componentes de entidade
+        - Utilitários específicos
+        
+    - name: "shared"
+      description: "Camada compartilhada - componentes e utilitários genéricos"
+      structure:
+        - ui/          # Componentes UI reutilizáveis
+        - lib/          # Bibliotecas e configurações
+        - api/          # Cliente HTTP e configurações
+        - utils/        # Funções utilitárias
+        - constants/    # Constantes
+        - types/        # Types globais
+      responsibilities:
+        - Componentes UI base
+        - Configuração de API
+        - Helpers e validadores
+        - Constantes
+
+technology_stack:
+  framework: "React 18+"
+  language: "TypeScript 5+"
+  build_tool: "Vite 5+"
+  state_management: "Zustand ou Redux Toolkit"
+  routing: "React Router v6+"
+  http_client: "Axios"
+  form_handling: "React Hook Form + Zod"
+  ui_library: "Material-UI (MUI) ou Ant Design"
+  styling: "CSS Modules ou Styled Components"
+  testing:
+    unit: "Vitest"
+    integration: "React Testing Library"
+    e2e: "Playwright ou Cypress"
+  code_quality:
+    linter: "ESLint"
+    formatter: "Prettier"
+    type_checker: "TypeScript"
+    git_hooks: "Husky + lint-staged"
+  i18n: "react-i18next"
+  date_handling: "date-fns"
+
+# ============================================
+# ESTRUTURA DE PASTAS
+# ============================================
+
+folder_structure: |
+  src/
+  ├── app/
+  │   ├── providers/
+  │   │   ├── AuthProvider.tsx
+  │   │   ├── ThemeProvider.tsx
+  │   │   └── ToastProvider.tsx
+  │   ├── router/
+  │   │   └── AppRouter.tsx
+  │   ├── layout/
+  │   │   ├── MainLayout.tsx
+  │   │   ├── AuthLayout.tsx
+  │   │   └── components/
+  │   │       ├── Header.tsx
+  │   │       ├── Sidebar.tsx
+  │   │       └── Footer.tsx
+  │   └── interceptors/
+  │       └── axios.interceptor.ts
+  │
+  ├── features/
+  │   ├── auth/
+  │   │   ├── components/
+  │   │   ├── hooks/
+  │   │   ├── services/
+  │   │   ├── stores/
+  │   │   └── types/
+  │   ├── usuarios/
+  │   ├── membros/
+  │   └── financeiro/
+  │
+  ├── entities/
+  │   ├── usuario/
+  │   ├── membro/
+  │   ├── financeiro/
+  │   └── endereco/
+  │
+  ├── shared/
+  │   ├── ui/
+  │   │   ├── Button/
+  │   │   ├── Input/
+  │   │   ├── Select/
+  │   │   ├── Table/
+  │   │   ├── Modal/
+  │   │   ├── Card/
+  │   │   └── Loading/
+  │   ├── api/
+  │   │   ├── client.ts
+  │   │   ├── endpoints.ts
+  │   │   └── types.ts
+  │   ├── lib/
+  │   │   ├── validators/
+  │   │   ├── formatters/
+  │   │   └── constants/
+  │   └── utils/
+  │
+  └── assets/
+
+# ============================================
+# TELAS E COMPONENTES
+# ============================================
+
+screens:
+  # ============================================
+  # AUTENTICAÇÃO
+  # ============================================
+  - name: "Login"
+    path: "/login"
+    public: true
+    description: "Tela de autenticação de usuários"
+    fields:
+      - name: "email"
+        type: "email"
+        label: "Email"
+        required: true
+        validation:
+          - type: "required"
+            message: "Email é obrigatório"
+          - type: "email"
+            message: "Email deve ser válido"
+        placeholder: "exemplo@email.com"
+        
+      - name: "senha"
+        type: "password"
+        label: "Senha"
+        required: true
+        validation:
+          - type: "required"
+            message: "Senha é obrigatória"
+        placeholder: "Digite sua senha"
+        showPasswordToggle: true
+    
+    actions:
+      - type: "submit"
+        label: "Entrar"
+        endpoint: "POST /api/auth/login"
+        onSuccess: "redirect:/dashboard"
+        onError: "showError"
+    
+    layout: "AuthLayout"
+    features:
+      - "Validação de formulário"
+      - "Feedback de erro"
+      - "Loading state"
+      - "Lembrar credenciais (opcional)"
+
+  - name: "Cadastro"
+    path: "/cadastro"
+    public: true
+    description: "Tela de cadastro de novos usuários"
+    fields:
+      - name: "nome"
+        type: "text"
+        label: "Nome completo"
+        required: true
+        validation:
+          - type: "required"
+            message: "Nome é obrigatório"
+          - type: "minLength"
+            value: 3
+            message: "Nome deve ter entre 3 e 120 caracteres"
+          - type: "maxLength"
+            value: 120
+            message: "Nome deve ter entre 3 e 120 caracteres"
+        placeholder: "Digite seu nome completo"
+        
+      - name: "email"
+        type: "email"
+        label: "Email"
+        required: true
+        validation:
+          - type: "required"
+            message: "Email é obrigatório"
+          - type: "email"
+            message: "Email deve ser válido"
+          - type: "maxLength"
+            value: 120
+            message: "Email deve ter no máximo 120 caracteres"
+        placeholder: "exemplo@email.com"
+        
+      - name: "senha"
+        type: "password"
+        label: "Senha"
+        required: true
+        validation:
+          - type: "required"
+            message: "Senha é obrigatória"
+          - type: "minLength"
+            value: 6
+            message: "Senha deve ter no mínimo 6 caracteres"
+        placeholder: "Mínimo 6 caracteres"
+        showPasswordToggle: true
+        
+      - name: "confirmarSenha"
+        type: "password"
+        label: "Confirmar senha"
+        required: true
+        validation:
+          - type: "required"
+            message: "Confirmação de senha é obrigatória"
+          - type: "match"
+            field: "senha"
+            message: "As senhas não coincidem"
+        placeholder: "Digite a senha novamente"
+        showPasswordToggle: true
+    
+    actions:
+      - type: "submit"
+        label: "Cadastrar"
+        endpoint: "POST /api/auth/cadastro"
+        onSuccess: "redirect:/login?registered=true"
+        onError: "showError"
+      - type: "link"
+        label: "Já tem conta? Entrar"
+        to: "/login"
+    
+    layout: "AuthLayout"
+
+  # ============================================
+  # DASHBOARD
+  # ============================================
+  - name: "Dashboard"
+    path: "/dashboard"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Tela principal com resumo e estatísticas"
+    components:
+      - type: "statistics"
+        cards:
+          - title: "Total de Membros"
+            endpoint: "GET /api/membros"
+            calculation: "count"
+            icon: "people"
+          - title: "Total de Usuários"
+            endpoint: "GET /api/auth/usuarios"
+            calculation: "count"
+            icon: "users"
+            adminOnly: true
+          - title: "Entradas do Mês"
+            endpoint: "GET /api/financeiro"
+            calculation: "sum(entrada)"
+            filter: "currentMonth"
+            icon: "trending-up"
+          - title: "Saídas do Mês"
+            endpoint: "GET /api/financeiro"
+            calculation: "sum(saida)"
+            filter: "currentMonth"
+            icon: "trending-down"
+      
+      - type: "chart"
+        title: "Fluxo Financeiro"
+        endpoint: "GET /api/financeiro"
+        chartType: "line"
+        period: "last6Months"
+      
+      - type: "table"
+        title: "Últimos Registros Financeiros"
+        endpoint: "GET /api/financeiro"
+        limit: 5
+        columns: ["tipo", "entrada", "saida", "dataRegistro"]
+    
+    layout: "MainLayout"
+
+  # ============================================
+  # USUÁRIOS (Apenas ADMIN)
+  # ============================================
+  - name: "Lista de Usuários"
+    path: "/usuarios"
+    protected: true
+    roles: ["ADMIN"]
+    description: "Listagem de todos os usuários do sistema"
+    components:
+      - type: "search"
+        placeholder: "Buscar por nome..."
+        endpoint: "GET /api/auth/usuarios/buscar/{nome}"
+        debounce: 300
+        
+      - type: "table"
+        endpoint: "GET /api/auth/usuarios"
+        columns:
+          - field: "id"
+            label: "ID"
+            sortable: true
+          - field: "nome"
+            label: "Nome"
+            sortable: true
+          - field: "email"
+            label: "Email"
+            sortable: true
+          - field: "role"
+            label: "Perfil"
+            sortable: true
+            render: "badge"
+            values:
+              ADMIN: { color: "error", label: "Administrador" }
+              USER: { color: "default", label: "Usuário" }
+          - field: "dataCriacao"
+            label: "Data de Cadastro"
+            sortable: true
+            format: "date"
+          - field: "actions"
+            label: "Ações"
+            actions:
+              - type: "edit"
+                to: "/usuarios/{id}/editar"
+              - type: "delete"
+                endpoint: "DELETE /api/auth/usuarios/{id}"
+                confirm: true
+              - type: "promote"
+                label: "Promover a Admin"
+                endpoint: "PUT /api/auth/usuarios/{id}/promover-admin"
+                condition: "role === 'USER'"
+                confirm: true
+                adminOnly: true
+        
+        pagination:
+          enabled: true
+          pageSize: 10
+          pageSizeOptions: [10, 25, 50]
+        
+        actions:
+          - type: "button"
+            label: "Novo Usuário"
+            to: "/usuarios/novo"
+            variant: "primary"
+    
+    layout: "MainLayout"
+
+  - name: "Editar Usuário"
+    path: "/usuarios/:id/editar"
+    protected: true
+    roles: ["ADMIN"]
+    description: "Formulário de edição de usuário"
+    fields:
+      - name: "nome"
+        type: "text"
+        label: "Nome completo"
+        required: true
+        validation:
+          - type: "required"
+          - type: "minLength"
+            value: 3
+          - type: "maxLength"
+            value: 120
+        
+      - name: "email"
+        type: "email"
+        label: "Email"
+        required: true
+        validation:
+          - type: "required"
+          - type: "email"
+          - type: "maxLength"
+            value: 120
+        
+      - name: "senha"
+        type: "password"
+        label: "Nova senha (opcional)"
+        required: false
+        validation:
+          - type: "minLength"
+            value: 6
+        placeholder: "Deixe em branco para manter a senha atual"
+        showPasswordToggle: true
+    
+    actions:
+      - type: "submit"
+        label: "Salvar"
+        endpoint: "PUT /api/auth/usuarios/{id}"
+        onSuccess: "redirect:/usuarios"
+      - type: "cancel"
+        label: "Cancelar"
+        to: "/usuarios"
+    
+    dataLoad:
+      endpoint: "GET /api/auth/usuarios/{id}"
+      method: "findById"
+    
+    layout: "MainLayout"
+
+  # ============================================
+  # MEMBROS
+  # ============================================
+  - name: "Lista de Membros"
+    path: "/membros"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Listagem de todos os membros cadastrados"
+    components:
+      - type: "tabs"
+        tabs:
+          - label: "Buscar por Nome"
+            endpoint: "GET /api/membros/buscar/nome/{nome}"
+          - label: "Buscar por CPF"
+            endpoint: "GET /api/membros/buscar/cpf/{cpf}"
+            inputType: "cpf"
+          - label: "Buscar por RI"
+            endpoint: "GET /api/membros/buscar/ri/{ri}"
+      
+      - type: "table"
+        endpoint: "GET /api/membros"
+        columns:
+          - field: "id"
+            label: "ID"
+            sortable: true
+          - field: "nome"
+            label: "Nome"
+            sortable: true
+          - field: "cpf"
+            label: "CPF"
+            format: "cpf"
+          - field: "rg"
+            label: "RG"
+          - field: "ri"
+            label: "RI"
+          - field: "cargo"
+            label: "Cargo"
+          - field: "endereco"
+            label: "Endereço"
+            render: "address"
+            format: "{rua}, {numero} - {bairro}"
+          - field: "actions"
+            label: "Ações"
+            actions:
+              - type: "view"
+                to: "/membros/{id}"
+              - type: "edit"
+                to: "/membros/{id}/editar"
+              - type: "delete"
+                endpoint: "DELETE /api/membros/{id}"
+                confirm: true
+        
+        pagination:
+          enabled: true
+          pageSize: 10
+        
+        actions:
+          - type: "button"
+            label: "Novo Membro"
+            to: "/membros/novo"
+            variant: "primary"
+    
+    layout: "MainLayout"
+
+  - name: "Cadastrar Membro"
+    path: "/membros/novo"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Formulário de cadastro de novo membro"
+    sections:
+      - title: "Dados Pessoais"
+        fields:
+          - name: "nome"
+            type: "text"
+            label: "Nome completo"
+            required: true
+            validation:
+              - type: "required"
+              - type: "minLength"
+                value: 3
+              - type: "maxLength"
+                value: 120
+          
+          - name: "cpf"
+            type: "text"
+            label: "CPF"
+            required: true
+            validation:
+              - type: "required"
+              - type: "cpf"
+                message: "CPF inválido"
+            mask: "cpf"
+            placeholder: "000.000.000-00"
+          
+          - name: "rg"
+            type: "text"
+            label: "RG"
+            required: true
+            validation:
+              - type: "required"
+              - type: "maxLength"
+                value: 20
+            placeholder: "Digite o RG"
+          
+          - name: "ri"
+            type: "text"
+            label: "RI"
+            required: true
+            validation:
+              - type: "required"
+              - type: "maxLength"
+                value: 20
+            placeholder: "Digite o RI"
+          
+          - name: "cargo"
+            type: "text"
+            label: "Cargo"
+            required: false
+            validation:
+              - type: "maxLength"
+                value: 60
+            placeholder: "Digite o cargo (opcional)"
+      
+      - title: "Endereço"
+        fields:
+          - name: "endereco.rua"
+            type: "text"
+            label: "Rua"
+            required: true
+            validation:
+              - type: "required"
+              - type: "maxLength"
+                value: 120
+          
+          - name: "endereco.numero"
+            type: "text"
+            label: "Número"
+            required: true
+            validation:
+              - type: "required"
+              - type: "maxLength"
+                value: 10
+          
+          - name: "endereco.cep"
+            type: "text"
+            label: "CEP"
+            required: true
+            validation:
+              - type: "required"
+              - type: "cep"
+            mask: "cep"
+            placeholder: "00000-000"
+            onBlur: "fetchAddressFromCep"
+          
+          - name: "endereco.bairro"
+            type: "text"
+            label: "Bairro"
+            required: true
+            validation:
+              - type: "required"
+              - type: "maxLength"
+                value: 80
+          
+          - name: "endereco.complemento"
+            type: "text"
+            label: "Complemento"
+            required: false
+            validation:
+              - type: "maxLength"
+                value: 120
+            placeholder: "Apto, Bloco, etc. (opcional)"
+    
+    actions:
+      - type: "submit"
+        label: "Cadastrar"
+        endpoint: "POST /api/membros"
+        onSuccess: "redirect:/membros"
+      - type: "cancel"
+        label: "Cancelar"
+        to: "/membros"
+    
+    layout: "MainLayout"
+
+  - name: "Editar Membro"
+    path: "/membros/:id/editar"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Formulário de edição de membro"
+    fields: "same as Cadastrar Membro"
+    dataLoad:
+      endpoint: "GET /api/membros/{id}"
+    actions:
+      - type: "submit"
+        label: "Salvar"
+        endpoint: "PUT /api/membros/{id}"
+        onSuccess: "redirect:/membros"
+      - type: "cancel"
+        label: "Cancelar"
+        to: "/membros"
+    layout: "MainLayout"
+
+  - name: "Detalhes do Membro"
+    path: "/membros/:id"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Visualização detalhada de um membro"
+    components:
+      - type: "card"
+        title: "Dados Pessoais"
+        fields: ["nome", "cpf", "rg", "ri", "cargo"]
+      
+      - type: "card"
+        title: "Endereço"
+        fields: ["endereco"]
+      
+      - type: "table"
+        title: "Registros Financeiros"
+        endpoint: "GET /api/financeiro/buscar/membro/{id}"
+        columns: ["tipo", "entrada", "saida", "dataRegistro", "observacao"]
+    
+    dataLoad:
+      endpoint: "GET /api/membros/{id}"
+    
+    actions:
+      - type: "button"
+        label: "Editar"
+        to: "/membros/{id}/editar"
+      - type: "button"
+        label: "Voltar"
+        to: "/membros"
+    
+    layout: "MainLayout"
+
+  # ============================================
+  # FINANCEIRO
+  # ============================================
+  - name: "Lista de Registros Financeiros"
+    path: "/financeiro"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Listagem de todos os registros financeiros"
+    components:
+      - type: "filters"
+        filters:
+          - name: "tipo"
+            type: "select"
+            label: "Tipo"
+            options:
+              - value: "DIZIMO"
+                label: "Dízimo"
+              - value: "DESPESAS"
+                label: "Despesas"
+              - value: "REFORMAS"
+                label: "Reformas"
+              - value: "OFERTAS"
+                label: "Ofertas"
+            endpoint: "GET /api/financeiro/buscar/tipo/{tipo}"
+          
+          - name: "membro"
+            type: "select"
+            label: "Membro"
+            endpoint: "GET /api/membros"
+            optionValue: "id"
+            optionLabel: "nome"
+            endpointFilter: "GET /api/financeiro/buscar/membro/{membroId}"
+          
+          - name: "periodo"
+            type: "daterange"
+            label: "Período"
+            format: "date"
+      
+      - type: "table"
+        endpoint: "GET /api/financeiro"
+        columns:
+          - field: "id"
+            label: "ID"
+            sortable: true
+          - field: "tipo"
+            label: "Tipo"
+            sortable: true
+            render: "badge"
+            values:
+              DIZIMO: { color: "success", label: "Dízimo" }
+              DESPESAS: { color: "error", label: "Despesas" }
+              REFORMAS: { color: "warning", label: "Reformas" }
+              OFERTAS: { color: "info", label: "Ofertas" }
+          - field: "entrada"
+            label: "Entrada"
+            format: "currency"
+            sortable: true
+          - field: "saida"
+            label: "Saída"
+            format: "currency"
+            sortable: true
+          - field: "saldo"
+            label: "Saldo"
+            format: "currency"
+            calculation: "entrada - saida"
+          - field: "membro"
+            label: "Membro"
+            render: "link"
+            to: "/membros/{membro.id}"
+            condition: "membro !== null"
+          - field: "observacao"
+            label: "Observação"
+            truncate: 50
+          - field: "dataRegistro"
+            label: "Data"
+            format: "datetime"
+            sortable: true
+          - field: "actions"
+            label: "Ações"
+            actions:
+              - type: "view"
+                to: "/financeiro/{id}"
+              - type: "edit"
+                to: "/financeiro/{id}/editar"
+              - type: "delete"
+                endpoint: "DELETE /api/financeiro/{id}"
+                confirm: true
+        
+        pagination:
+          enabled: true
+          pageSize: 20
+        
+        summary:
+          - field: "totalEntrada"
+            label: "Total de Entradas"
+            calculation: "sum(entrada)"
+            format: "currency"
+          - field: "totalSaida"
+            label: "Total de Saídas"
+            calculation: "sum(saida)"
+            format: "currency"
+          - field: "saldoTotal"
+            label: "Saldo Total"
+            calculation: "sum(entrada) - sum(saida)"
+            format: "currency"
+        
+        actions:
+          - type: "button"
+            label: "Novo Registro"
+            to: "/financeiro/novo"
+            variant: "primary"
+    
+    layout: "MainLayout"
+
+  - name: "Cadastrar Registro Financeiro"
+    path: "/financeiro/novo"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Formulário de cadastro de registro financeiro"
+    fields:
+      - name: "tipo"
+        type: "select"
+        label: "Tipo"
+        required: true
+        validation:
+          - type: "required"
+            message: "Tipo é obrigatório"
+        options:
+          - value: "DIZIMO"
+            label: "Dízimo"
+          - value: "DESPESAS"
+            label: "Despesas"
+          - value: "REFORMAS"
+            label: "Reformas"
+          - value: "OFERTAS"
+            label: "Ofertas"
+      
+      - name: "entrada"
+        type: "number"
+        label: "Valor de Entrada"
+        required: false
+        validation:
+          - type: "min"
+            value: 0
+            message: "Entrada deve ser maior ou igual a zero"
+        format: "currency"
+        placeholder: "0,00"
+        helpText: "Deixe em branco se não houver entrada"
+      
+      - name: "saida"
+        type: "number"
+        label: "Valor de Saída"
+        required: false
+        validation:
+          - type: "min"
+            value: 0
+            message: "Saída deve ser maior ou igual a zero"
+        format: "currency"
+        placeholder: "0,00"
+        helpText: "Deixe em branco se não houver saída"
+        note: "É necessário informar pelo menos um valor de entrada ou saída"
+      
+      - name: "membroId"
+        type: "select"
+        label: "Membro (opcional)"
+        required: false
+        endpoint: "GET /api/membros"
+        optionValue: "id"
+        optionLabel: "nome"
+        placeholder: "Selecione um membro (opcional)"
+        clearable: true
+      
+      - name: "observacao"
+        type: "textarea"
+        label: "Observação"
+        required: false
+        validation:
+          - type: "maxLength"
+            value: 255
+        placeholder: "Digite uma observação (opcional)"
+        rows: 4
+    
+    actions:
+      - type: "submit"
+        label: "Cadastrar"
+        endpoint: "POST /api/financeiro"
+        onSuccess: "redirect:/financeiro"
+      - type: "cancel"
+        label: "Cancelar"
+        to: "/financeiro"
+    
+    layout: "MainLayout"
+
+  - name: "Editar Registro Financeiro"
+    path: "/financeiro/:id/editar"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Formulário de edição de registro financeiro"
+    fields: "same as Cadastrar Registro Financeiro"
+    dataLoad:
+      endpoint: "GET /api/financeiro/{id}"
+    actions:
+      - type: "submit"
+        label: "Salvar"
+        endpoint: "PUT /api/financeiro/{id}"
+        onSuccess: "redirect:/financeiro"
+      - type: "cancel"
+        label: "Cancelar"
+        to: "/financeiro"
+    layout: "MainLayout"
+
+  - name: "Detalhes do Registro Financeiro"
+    path: "/financeiro/:id"
+    protected: true
+    roles: ["ADMIN", "USER"]
+    description: "Visualização detalhada de um registro financeiro"
+    components:
+      - type: "card"
+        title: "Informações do Registro"
+        fields: ["tipo", "entrada", "saida", "saldo", "dataRegistro", "observacao"]
+      
+      - type: "card"
+        title: "Membro Associado"
+        condition: "membro !== null"
+        fields: ["membro"]
+        render: "link"
+        to: "/membros/{membro.id}"
+    
+    dataLoad:
+      endpoint: "GET /api/financeiro/{id}"
+    
+    actions:
+      - type: "button"
+        label: "Editar"
+        to: "/financeiro/{id}/editar"
+      - type: "button"
+        label: "Voltar"
+        to: "/financeiro"
+    
+    layout: "MainLayout"
+
+# ============================================
+# COMPONENTES REUTILIZÁVEIS
+# ============================================
+
+shared_components:
+  - name: "Button"
+    props:
+      - variant: ["primary", "secondary", "outline", "danger", "ghost"]
+      - size: ["small", "medium", "large"]
+      - loading: "boolean"
+      - disabled: "boolean"
+      - icon: "ReactNode"
+    accessibility: "ARIA labels, keyboard navigation"
+  
+  - name: "Input"
+    props:
+      - type: ["text", "email", "password", "number", "tel"]
+      - label: "string"
+      - placeholder: "string"
+      - error: "string"
+      - helperText: "string"
+      - required: "boolean"
+      - disabled: "boolean"
+      - mask: ["cpf", "cep", "phone", "currency"]
+    features:
+      - "Validação em tempo real"
+      - "Feedback visual de erro"
+      - "Máscaras de entrada"
+  
+  - name: "Select"
+    props:
+      - options: "Array<{value, label}>"
+      - multiple: "boolean"
+      - searchable: "boolean"
+      - clearable: "boolean"
+      - endpoint: "string (para busca dinâmica)"
+    features:
+      - "Busca/filtro"
+      - "Carregamento assíncrono"
+      - "Virtualização para grandes listas"
+  
+  - name: "Table"
+    props:
+      - columns: "Array<Column>"
+      - data: "Array<any>"
+      - loading: "boolean"
+      - pagination: "PaginationConfig"
+      - sorting: "boolean"
+      - filtering: "boolean"
+    features:
+      - "Paginação"
+      - "Ordenação"
+      - "Filtros"
+      - "Ações em linha"
+      - "Seleção múltipla"
+      - "Exportação (CSV, Excel)"
+  
+  - name: "Modal"
+    props:
+      - open: "boolean"
+      - title: "string"
+      - size: ["small", "medium", "large", "fullscreen"]
+      - closable: "boolean"
+    features:
+      - "Animações"
+      - "Foco e trap"
+      - "Overlay click to close"
+  
+  - name: "Card"
+    props:
+      - title: "string"
+      - subtitle: "string"
+      - actions: "ReactNode"
+      - variant: ["default", "outlined", "elevated"]
+  
+  - name: "Loading"
+    variants:
+      - "spinner"
+      - "skeleton"
+      - "progress"
+  
+  - name: "Toast"
+    types: ["success", "error", "warning", "info"]
+    features:
+      - "Posicionamento configurável"
+      - "Auto-dismiss"
+      - "Ações customizadas"
+
+# ============================================
+# GERENCIAMENTO DE ESTADO
+# ============================================
+
+state_management:
+  global_state:
+    - auth:
+        - user: "User | null"
+        - token: "string | null"
+        - isAuthenticated: "boolean"
+        - role: "Role | null"
+        actions:
+          - "login"
+          - "logout"
+          - "refreshToken"
+          - "checkAuth"
+    
+    - ui:
+        - theme: "light | dark"
+        - sidebarOpen: "boolean"
+        - loading: "boolean"
+        - notifications: "Array<Notification>"
+        actions:
+          - "toggleTheme"
+          - "toggleSidebar"
+          - "showNotification"
+          - "hideNotification"
+  
+  feature_state:
+    - usuarios:
+        - list: "Array<Usuario>"
+        - selected: "Usuario | null"
+        - filters: "FilterState"
+        - pagination: "PaginationState"
+    
+    - membros:
+        - list: "Array<Membro>"
+        - selected: "Membro | null"
+        - filters: "FilterState"
+        - pagination: "PaginationState"
+    
+    - financeiro:
+        - list: "Array<Financeiro>"
+        - selected: "Financeiro | null"
+        - filters: "FilterState"
+        - pagination: "PaginationState"
+        - summary: "SummaryState"
+
+# ============================================
+# API E ENDPOINTS
+# ============================================
+
+api_configuration:
+  baseURL: "http://localhost:8080/api"
+  timeout: 30000
+  headers:
+    - "Content-Type: application/json"
+    - "Accept: application/json"
+  
+  interceptors:
+    request:
+      - "Add Authorization header (Bearer token)"
+      - "Add request ID for tracing"
+      - "Log requests in development"
+    
+    response:
+      - "Handle 401 (Unauthorized) - redirect to login"
+      - "Handle 403 (Forbidden) - show error message"
+      - "Handle 500 (Server Error) - show error message"
+      - "Handle network errors"
+      - "Transform response data"
+      - "Log responses in development"
+  
+  endpoints:
+    auth:
+      login: "POST /api/auth/login"
+      cadastro: "POST /api/auth/cadastro"
+      usuarios:
+        list: "GET /api/auth/usuarios"
+        search: "GET /api/auth/usuarios/buscar/{nome}"
+        get: "GET /api/auth/usuarios/{id}"
+        update: "PUT /api/auth/usuarios/{id}"
+        delete: "DELETE /api/auth/usuarios/{id}"
+        promote: "PUT /api/auth/usuarios/{id}/promover-admin"
+    
+    membros:
+      list: "GET /api/membros"
+      get: "GET /api/membros/{id}"
+      create: "POST /api/membros"
+      update: "PUT /api/membros/{id}"
+      delete: "DELETE /api/membros/{id}"
+      search:
+        byName: "GET /api/membros/buscar/nome/{nome}"
+        byCpf: "GET /api/membros/buscar/cpf/{cpf}"
+        byRi: "GET /api/membros/buscar/ri/{ri}"
+    
+    financeiro:
+      list: "GET /api/financeiro"
+      get: "GET /api/financeiro/{id}"
+      create: "POST /api/financeiro"
+      update: "PUT /api/financeiro/{id}"
+      delete: "DELETE /api/financeiro/{id}"
+      search:
+        byType: "GET /api/financeiro/buscar/tipo/{tipo}"
+        byMember: "GET /api/financeiro/buscar/membro/{membroId}"
+
+# ============================================
+# VALIDAÇÕES E FORMATADORES
+# ============================================
+
+validators:
+  - name: "cpf"
+    function: "validateCPF"
+    message: "CPF inválido"
+  
+  - name: "cep"
+    function: "validateCEP"
+    message: "CEP inválido"
+  
+  - name: "email"
+    function: "validateEmail"
+    message: "Email inválido"
+  
+  - name: "required"
+    function: "validateRequired"
+    message: "Campo obrigatório"
+  
+  - name: "minLength"
+    function: "validateMinLength"
+    message: "Mínimo de {value} caracteres"
+  
+  - name: "maxLength"
+    function: "validateMaxLength"
+    message: "Máximo de {value} caracteres"
+
+formatters:
+  - name: "cpf"
+    function: "formatCPF"
+    example: "12345678901 -> 123.456.789-01"
+  
+  - name: "cep"
+    function: "formatCEP"
+    example: "12345678 -> 12345-678"
+  
+  - name: "currency"
+    function: "formatCurrency"
+    example: "1234.56 -> R$ 1.234,56"
+  
+  - name: "date"
+    function: "formatDate"
+    example: "2024-01-15 -> 15/01/2024"
+  
+  - name: "datetime"
+    function: "formatDateTime"
+    example: "2024-01-15T10:30:00 -> 15/01/2024 10:30"
+
+# ============================================
+# ROTEAMENTO E NAVEGAÇÃO
+# ============================================
+
+routing:
+  public_routes:
+    - path: "/login"
+      component: "Login"
+    - path: "/cadastro"
+      component: "Cadastro"
+  
+  protected_routes:
+    - path: "/dashboard"
+      component: "Dashboard"
+      roles: ["ADMIN", "USER"]
+    
+    - path: "/usuarios"
+      component: "ListaUsuarios"
+      roles: ["ADMIN"]
+      children:
+        - path: "/usuarios/:id/editar"
+          component: "EditarUsuario"
+    
+    - path: "/membros"
+      component: "ListaMembros"
+      roles: ["ADMIN", "USER"]
+      children:
+        - path: "/membros/novo"
+          component: "CadastrarMembro"
+        - path: "/membros/:id"
+          component: "DetalhesMembro"
+        - path: "/membros/:id/editar"
+          component: "EditarMembro"
+    
+    - path: "/financeiro"
+      component: "ListaFinanceiro"
+      roles: ["ADMIN", "USER"]
+      children:
+        - path: "/financeiro/novo"
+          component: "CadastrarFinanceiro"
+        - path: "/financeiro/:id"
+          component: "DetalhesFinanceiro"
+        - path: "/financeiro/:id/editar"
+          component: "EditarFinanceiro"
+  
+  navigation:
+    menu:
+      - label: "Dashboard"
+        path: "/dashboard"
+        icon: "dashboard"
+        roles: ["ADMIN", "USER"]
+      
+      - label: "Usuários"
+        path: "/usuarios"
+        icon: "users"
+        roles: ["ADMIN"]
+      
+      - label: "Membros"
+        path: "/membros"
+        icon: "people"
+        roles: ["ADMIN", "USER"]
+      
+      - label: "Financeiro"
+        path: "/financeiro"
+        icon: "money"
+        roles: ["ADMIN", "USER"]
+      
+      - label: "Sair"
+        action: "logout"
+        icon: "logout"
+        roles: ["ADMIN", "USER"]
+
+# ============================================
+# SEGURANÇA E AUTENTICAÇÃO
+# ============================================
+
+security:
+  authentication:
+    method: "JWT Bearer Token"
+    tokenStorage: "localStorage"
+    tokenKey: "auth_token"
+    refreshToken: false
+    
+    flow:
+      1: "User submits login form"
+      2: "API returns token and user data"
+      3: "Store token in localStorage"
+      4: "Add token to all subsequent requests"
+      5: "Handle 401 responses - redirect to login"
+      6: "Clear token on logout"
+  
+  authorization:
+    roleBased:
+      - role: "ADMIN"
+        permissions:
+          - "Gerenciar usuários"
+          - "Promover usuários a admin"
+          - "Acessar todos os recursos"
+      
+      - role: "USER"
+        permissions:
+          - "Gerenciar membros"
+          - "Gerenciar financeiro"
+          - "Visualizar dashboard"
+  
+  route_guards:
+    - name: "ProtectedRoute"
+      check: "isAuthenticated"
+      redirect: "/login"
+    
+    - name: "RoleBasedRoute"
+      check: "hasRole"
+      redirect: "/dashboard"
+      message: "Você não tem permissão para acessar esta página"
+
+# ============================================
+# PERFORMANCE E OTIMIZAÇÃO
+# ============================================
+
+performance:
+  code_splitting:
+    - "Route-based code splitting"
+    - "Component lazy loading"
+    - "Dynamic imports for heavy libraries"
+  
+  caching:
+    - "API response caching (React Query / SWR)"
+    - "Static asset caching"
+    - "Service Worker for offline support"
+  
+  optimization:
+    - "React.memo for expensive components"
+    - "useMemo and useCallback for expensive calculations"
+    - "Virtual scrolling for large lists"
+    - "Image lazy loading"
+    - "Debounce for search inputs"
+    - "Throttle for scroll events"
+  
+  bundle_size:
+    - "Tree shaking"
+    - "Code minification"
+    - "Gzip compression"
+    - "Analyze bundle with webpack-bundle-analyzer"
+
+# ============================================
+# TESTES
+# ============================================
+
+testing:
+  unit_tests:
+    coverage: "> 80%"
+    tools: ["Vitest", "React Testing Library"]
+    test:
+      - "Component rendering"
+      - "User interactions"
+      - "Form validations"
+      - "Utility functions"
+      - "Custom hooks"
+  
+  integration_tests:
+    tools: ["React Testing Library"]
+    test:
+      - "Form submissions"
+      - "API integrations"
+      - "Navigation flows"
+      - "State management"
+  
+  e2e_tests:
+    tools: ["Playwright ou Cypress"]
+    scenarios:
+      - "Complete user registration flow"
+      - "Login and authentication"
+      - "CRUD operations for each entity"
+      - "Role-based access control"
+      - "Error handling"
+
+# ============================================
+# ACESSIBILIDADE
+# ============================================
+
+accessibility:
+  standards: "WCAG 2.1 Level AA"
+  requirements:
+    - "Keyboard navigation"
+    - "Screen reader support"
+    - "ARIA labels and roles"
+    - "Color contrast (4.5:1 minimum)"
+    - "Focus indicators"
+    - "Alt text for images"
+    - "Form labels and error messages"
+  
+  tools:
+    - "axe DevTools"
+    - "Lighthouse"
+    - "WAVE"
+
+# ============================================
+# INTERNACIONALIZAÇÃO
+# ============================================
+
+i18n:
+  default_language: "pt-BR"
+  supported_languages:
+    - "pt-BR"
+    - "en-US"
+  
+  translation_files:
+    - "common.json"
+    - "auth.json"
+    - "usuarios.json"
+    - "membros.json"
+    - "financeiro.json"
+    - "errors.json"
+    - "validation.json"
+
+# ============================================
+# RESPONSIVIDADE
+# ============================================
+
+responsive_design:
+  breakpoints:
+    mobile: "320px - 768px"
+    tablet: "768px - 1024px"
+    desktop: "1024px+"
+  
+  mobile_first: true
+  features:
+    - "Touch-friendly buttons (min 44x44px)"
+    - "Responsive tables (scroll or cards)"
+    - "Collapsible sidebar on mobile"
+    - "Stack forms on mobile"
+    - "Optimized images for different screens"
+
+# ============================================
+# BOAS PRÁTICAS E CLEAN CODE
+# ============================================
+
+best_practices:
+  code_organization:
+    - "Single Responsibility Principle"
+    - "DRY (Don't Repeat Yourself)"
+    - "KISS (Keep It Simple, Stupid)"
+    - "Separation of Concerns"
+    - "Feature-based folder structure"
+  
+  naming_conventions:
+    components: "PascalCase"
+    functions: "camelCase"
+    constants: "UPPER_SNAKE_CASE"
+    files: "PascalCase for components, camelCase for utilities"
+    folders: "kebab-case"
+  
+  component_design:
+    - "Small, focused components"
+    - "Composition over inheritance"
+    - "Props interface definition"
+    - "Default props"
+    - "Error boundaries"
+  
+  hooks:
+    - "Custom hooks for reusable logic"
+    - "One hook per concern"
+    - "Hook naming: use*"
+  
+  state_management:
+    - "Local state for UI-only state"
+    - "Global state for shared state"
+    - "Server state with React Query/SWR"
+    - "Avoid prop drilling"
+  
+  error_handling:
+    - "Error boundaries for component errors"
+    - "Try-catch for async operations"
+    - "User-friendly error messages"
+    - "Error logging"
+  
+  code_quality:
+    - "TypeScript strict mode"
+    - "ESLint rules enforcement"
+    - "Prettier for code formatting"
+    - "Pre-commit hooks"
+    - "Code reviews"
+    - "Documentation (JSDoc)"
+
+# ============================================
+# ESCALABILIDADE
+# ============================================
+
+scalability:
+  horizontal_scaling:
+    - "Stateless application design"
+    - "CDN for static assets"
+    - "Load balancing ready"
+    - "Micro-frontends architecture (future)"
+  
+  vertical_scaling:
+    - "Efficient rendering (React optimization)"
+    - "Lazy loading"
+    - "Code splitting"
+    - "Memory management"
+  
+  future_considerations:
+    - "Micro-frontends with Module Federation"
+    - "Progressive Web App (PWA)"
+    - "Server-Side Rendering (SSR) with Next.js"
+    - "GraphQL API integration"
+    - "Real-time updates with WebSockets"
+    - "Offline-first architecture"
+
+# ============================================
+# DEPLOYMENT E CI/CD
+# ============================================
+
+deployment:
+  environments:
+    development:
+      url: "http://localhost:5173"
+      api: "http://localhost:8080/api"
+    
+    staging:
+      url: "https://staging.administrativo.com"
+      api: "https://staging-api.administrativo.com/api"
+    
+    production:
+      url: "https://administrativo.com"
+      api: "https://api.administrativo.com/api"
+  
+  ci_cd:
+    pipeline:
+      - stage: "Lint and Type Check"
+        commands:
+          - "npm run lint"
+          - "npm run type-check"
+      
+      - stage: "Tests"
+        commands:
+          - "npm run test:unit"
+          - "npm run test:e2e"
+      
+      - stage: "Build"
+        commands:
+          - "npm run build"
+      
+      - stage: "Deploy"
+        commands:
+          - "Deploy to staging/production"
+  
+  build_optimization:
+    - "Environment variables injection"
+    - "Source maps for production (optional)"
+    - "Asset optimization"
+    - "Bundle analysis"
+
+# ============================================
+# DOCUMENTAÇÃO
+# ============================================
+
+documentation:
+  code_documentation:
+    - "JSDoc for functions and components"
+    - "README.md for each feature"
+    - "Type definitions (TypeScript)"
+  
+  user_documentation:
+    - "User guide"
+    - "FAQ"
+    - "Video tutorials"
+  
+  developer_documentation:
+    - "Architecture overview"
+    - "Setup guide"
+    - "Contributing guidelines"
+    - "API integration guide"
+
+# ============================================
+# MONITORAMENTO E LOGS
+# ============================================
+
+monitoring:
+  error_tracking:
+    tool: "Sentry ou similar"
+    track:
+      - "JavaScript errors"
+      - "API errors"
+      - "Performance issues"
+  
+  analytics:
+    tool: "Google Analytics ou similar"
+    track:
+      - "Page views"
+      - "User actions"
+      - "Performance metrics"
+  
+  logging:
+    - "Console logs in development"
+    - "Structured logging in production"
+    - "Error logging with context"
+
