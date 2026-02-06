@@ -38,6 +38,7 @@ public class AuthController {
 
     @PostMapping("/cadastro")
     @Operation(summary = "Cadastrar novo usuário", description = "Cria um novo usuário no sistema")
+    @SecurityRequirement(name = "")
     public ResponseEntity<Map<String, Object>> cadastrar(@Valid @RequestBody CadastroUsuarioRequest request) {
         UsuarioResponse response = authService.cadastrar(request);
         Map<String, Object> result = new HashMap<>();
@@ -48,6 +49,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Fazer login", description = "Autentica um usuário e retorna um token JWT")
+    @SecurityRequirement(name = "")
     public ResponseEntity<Map<String, Object>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         Map<String, Object> result = new HashMap<>();
@@ -81,7 +83,8 @@ public class AuthController {
     @PutMapping("/usuarios/{id}")
     @Operation(summary = "Atualizar usuário", description = "Atualiza os dados de um usuário existente")
     @SecurityRequirement(name = "Bearer Authentication")
-    public ResponseEntity<Map<String, Object>> atualizar(@PathVariable Long id, @Valid @RequestBody AtualizarUsuarioRequest request) {
+    public ResponseEntity<Map<String, Object>> atualizar(@PathVariable Long id,
+            @Valid @RequestBody AtualizarUsuarioRequest request) {
         UsuarioResponse usuario = authService.atualizar(id, request);
         Map<String, Object> result = new HashMap<>();
         result.put("message", "Usuário atualizado com sucesso!");

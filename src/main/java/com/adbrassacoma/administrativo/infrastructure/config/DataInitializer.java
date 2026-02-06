@@ -32,7 +32,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private void criarUsuarioAdmin() {
         String adminEmail = "admin@administrativo.com";
-        
+
         if (!usuarioRepository.existsByEmail(adminEmail)) {
             Usuario admin = Usuario.builder()
                     .nome("Administrador Master")
@@ -40,9 +40,8 @@ public class DataInitializer implements CommandLineRunner {
                     .senha(passwordEncoder.encode("admin123"))
                     .role(Role.ADMIN)
                     .build();
-            
+
             usuarioRepository.save(admin);
-            log.info("Usuário admin master criado com sucesso! Email: {}, Senha: admin123", adminEmail);
         } else {
             log.info("Usuário admin master já existe no sistema.");
         }
@@ -54,13 +53,13 @@ public class DataInitializer implements CommandLineRunner {
 
         int telasCriadas = 0;
         int telasAtualizadas = 0;
-        
+
         for (TelaPermissao tela : telas) {
             if (tela.getId() == null) {
                 log.warn("Tela sem ID ignorada: {}", tela.getNome());
                 continue;
             }
-            
+
             if (!telaPermissaoRepository.existsById(tela.getId())) {
                 telaPermissaoRepository.save(tela);
                 telasCriadas++;
@@ -70,7 +69,7 @@ public class DataInitializer implements CommandLineRunner {
                 TelaPermissao telaExistente = telaPermissaoRepository.findById(tela.getId()).orElse(null);
                 if (telaExistente != null) {
                     boolean precisaAtualizar = false;
-                    
+
                     if (!tela.getNome().equals(telaExistente.getNome())) {
                         telaExistente.setNome(tela.getNome());
                         precisaAtualizar = true;
@@ -83,7 +82,7 @@ public class DataInitializer implements CommandLineRunner {
                         telaExistente.setDescricao(tela.getDescricao());
                         precisaAtualizar = true;
                     }
-                    
+
                     if (precisaAtualizar) {
                         telaPermissaoRepository.save(telaExistente);
                         telasAtualizadas++;
@@ -100,4 +99,3 @@ public class DataInitializer implements CommandLineRunner {
         }
     }
 }
-

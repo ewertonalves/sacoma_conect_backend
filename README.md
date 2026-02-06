@@ -59,27 +59,31 @@ cd administrativo
 
 ### 2. Configurar Variáveis de Ambiente
 
-O arquivo `application.properties` já contém configurações padrão. Para personalizar, você pode criar um arquivo `application-dev.properties` ou usar variáveis de ambiente:
+⚠️ **IMPORTANTE:** A partir desta versão, a aplicação requer variáveis de ambiente para funcionar corretamente.
 
-**Configurações Principais:**
+**Variáveis Obrigatórias:**
 
-```properties
-# URL do banco de dados H2 (em memória)
-spring.datasource.url=jdbc:h2:mem:administrativo
+```bash
+# JWT Secret - OBRIGATÓRIO para produção
+# Gere uma chave segura com: openssl rand -base64 32
+export JWT_SECRET=sua-chave-256-bits-aqui
 
-# Credenciais do banco
-spring.datasource.username=sa
-spring.datasource.password=
-
-# Configuração JWT
-jwt.secret=MinhaChaveSecretaSuperSeguraParaJWTTokenComPeloMenos256BitsDeTamanhoParaSeguranca
-jwt.expiration=86400000  # 24 horas em milissegundos
-
-# URL da API de CEP
-correios.api.url=https://viacep.com.br
+# CORS - URLs permitidas (separadas por vírgula)
+export ALLOWED_ORIGINS=http://localhost:3000,http://localhost:4200
 ```
 
-**Importante:** Em produção, altere o `jwt.secret` para uma chave segura com pelo menos 256 bits.
+**Variáveis Opcionais:**
+
+```bash
+# Rate Limiting (valores padrão já configurados)
+export RATE_LIMIT_GENERAL=100  # Requisições por minuto (geral)
+export RATE_LIMIT_AUTH=5       # Requisições por minuto (login)
+
+# JWT Expiração
+export JWT_EXPIRATION=86400000  # 24 horas em milissegundos
+```
+
+📄 **Consulte o arquivo `.env.example` para mais detalhes e exemplos de configuração.**
 
 ### 3. Compilar o Projeto
 
@@ -372,6 +376,65 @@ src/main/java/com/adbrassacoma/administrativo/
 3. **DTO Pattern**: Uso de DTOs para transferência de dados entre camadas
 4. **Repository Pattern**: Abstração do acesso a dados
 5. **Service Layer**: Lógica de negócio isolada em serviços
+
+## Nível de Segurança
+
+### Medidas de Segurança Implementadas
+
+#### 1. Autenticação JWT
+- Tokens assinados com HMAC SHA-256
+- Validação de expiração automática
+- Tokens stateless (sem necessidade de sessão no servidor)
+- ✅ **Chave secreta via variável de ambiente (JWT_SECRET)**
+
+#### 2. Criptografia de Senhas
+- Senhas armazenadas com BCrypt (hashing one-way)
+- Salt automático para cada senha
+- Impossibilidade de recuperação da senha original
+
+#### 3. Controle de Acesso Baseado em Roles
+- **ADMIN**: Acesso completo a todas as funcionalidades
+- **USER**: Acesso limitado baseado em permissões de telas
+
+#### 4. Proteção de Endpoints
+- Endpoints públicos: `/api/auth/login`, `/api/auth/cadastro`
+- Endpoints protegidos: Requerem token JWT válido
+- Endpoints administrativos: Requerem role ADMIN
+
+#### 5. Validação de Dados
+- Validação de entrada com Bean Validation
+- Validação customizada (ex: CPF)
+- Tratamento de erros padronizado
+
+#### 6. CORS Configurado
+- ✅ **Whitelist de origens via variável de ambiente (ALLOWED_ORIGINS)**
+- Headers expostos configurados adequadamente
+- Suporte a credenciais habilitado
+- Padrão seguro: apenas localhost em desenvolvimento
+
+#### 7. Rate Limiting
+- ✅ **Proteção contra ataques de força bruta**
+- Limite de 100 requisições/minuto para endpoints gerais
+- Limite de 5 requisições/minuto para login/cadastro
+- Resposta HTTP 429 (Too Many Requests) quando excedido
+- Headers informativos sobre limites restantes
+
+#### 8. Tratamento de Exceções
+- Tratamento centralizado de exceções
+- Mensagens de erro padronizadas
+- Não exposição de informações sensíveis em erros
+
+#### 9. Spring Security
+- Filtros de segurança configurados
+- Proteção contra CSRF (desabilitado para API REST)
+- Headers de segurança configurados
+
+#### 10. Logs Estruturados
+- ✅ **Logs em formato JSON para produção**
+- Rastreamento de requisições com Request ID único
+- MDC (Mapped Diagnostic Context) para contexto
+- Logs de auditoria para operações críticas
+- Diferentes níveis de log por ambiente
 
 ## Nível de Segurança
 

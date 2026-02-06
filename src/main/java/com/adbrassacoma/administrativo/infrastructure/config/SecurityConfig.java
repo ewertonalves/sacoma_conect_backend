@@ -22,7 +22,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -32,9 +31,9 @@ public class SecurityConfig {
 	private final UserDetailsService userDetailsService;
 	private final CustomAccessDeniedHandler customAccessDeniedHandler;
 
-	public SecurityConfig(@Lazy JwtAuthenticationFilter jwtAuthenticationFilter, 
-	                      @Lazy UserDetailsService userDetailsService,
-	                      CustomAccessDeniedHandler customAccessDeniedHandler) {
+	public SecurityConfig(@Lazy JwtAuthenticationFilter jwtAuthenticationFilter,
+			@Lazy UserDetailsService userDetailsService,
+			CustomAccessDeniedHandler customAccessDeniedHandler) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 		this.userDetailsService = userDetailsService;
 		this.customAccessDeniedHandler = customAccessDeniedHandler;
@@ -43,41 +42,37 @@ public class SecurityConfig {
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
-			.csrf(csrf -> csrf.disable())
-			.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-			.sessionManagement(session -> 
-				session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.authorizeHttpRequests(auth -> auth
-				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-				.requestMatchers(
-					"/swagger-ui/**",
-					"/swagger-ui.html",
-					"/swagger-ui/index.html",
-					"/v3/api-docs",
-					"/v3/api-docs/**",
-					"/swagger-resources/**",
-					"/swagger-resources",
-					"/webjars/**",
-					"/api/auth/cadastro",
-					"/api/auth/login",
-					"/actuator/health",
-					"/h2-console/**",
-					"/error",
-					"/favicon.ico"
-				).permitAll()
-				.requestMatchers("/api/auth/usuarios/**").hasRole("ADMIN")
-				.requestMatchers("/api/permissoes/minhas").authenticated()
-				.requestMatchers("/api/permissoes/**").hasRole("ADMIN")
-				.anyRequest().authenticated()
-			)
-			.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-			.userDetailsService(userDetailsService)
-			.exceptionHandling(exceptions -> exceptions
-				.accessDeniedHandler(customAccessDeniedHandler)
-			)
-			.headers(headers -> headers
-				.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable)
-			);
+				.csrf(csrf -> csrf.disable())
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+						.requestMatchers(
+								"/swagger-ui/**",
+								"/swagger-ui.html",
+								"/swagger-ui/index.html",
+								"/v3/api-docs",
+								"/v3/api-docs/**",
+								"/swagger-resources/**",
+								"/swagger-resources",
+								"/webjars/**",
+								"/api/auth/cadastro",
+								"/api/auth/login",
+								"/actuator/health",
+								"/h2-console/**",
+								"/error",
+								"/favicon.ico")
+						.permitAll()
+						.requestMatchers("/api/auth/usuarios/**").hasRole("ADMIN")
+						.requestMatchers("/api/permissoes/minhas").authenticated()
+						.requestMatchers("/api/permissoes/**").hasRole("ADMIN")
+						.anyRequest().authenticated())
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+				.userDetailsService(userDetailsService)
+				.exceptionHandling(exceptions -> exceptions
+						.accessDeniedHandler(customAccessDeniedHandler))
+				.headers(headers -> headers
+						.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable));
 
 		return http.build();
 	}
@@ -85,17 +80,16 @@ public class SecurityConfig {
 	@Bean
 	public WebSecurityCustomizer webSecurityCustomizer() {
 		return (web) -> web.ignoring()
-			.requestMatchers(
-				"/swagger-ui/**",
-				"/swagger-ui.html",
-				"/swagger-ui/index.html",
-				"/v3/api-docs",
-				"/v3/api-docs/**",
-				"/swagger-resources/**",
-				"/swagger-resources",
-				"/webjars/**",
-				"/favicon.ico"
-			);
+				.requestMatchers(
+						"/swagger-ui/**",
+						"/swagger-ui.html",
+						"/swagger-ui/index.html",
+						"/v3/api-docs",
+						"/v3/api-docs/**",
+						"/swagger-resources/**",
+						"/swagger-resources",
+						"/webjars/**",
+						"/favicon.ico");
 	}
 
 	@Bean
@@ -111,11 +105,21 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(List.of("*"));
+
+		// Obter origens permitidas da variável de ambiente
+		String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
+		if (allowedOrigins == null || allowedOrigins.isEmpty()) {
+			// Padrão para desenvolvimento
+			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:4200"));
+		} else {
+			configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+		}
+
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-		configuration.setAllowedHeaders(List.of("*"));
-		configuration.setExposedHeaders(List.of("*"));
-		configuration.setAllowCredentials(false);
+		configuration.setAllowedHeaders(Arrays.asList("*"));
+		configuration.setExposedHeaders(Arrays.asList("Authorization", "X-Rate-Limit-Limit", "X-Rate-Limit-Remaining",
+				"X-Rate-Limit-Retry-After-Seconds"));
+		configuration.setAllowCredentials(true);
 		configuration.setMaxAge(3600L);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -123,4 +127,3 @@ public class SecurityConfig {
 		return source;
 	}
 }
-
