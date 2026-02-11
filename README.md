@@ -617,10 +617,14 @@ Para respostas paginadas (Assistência Social):
 
 ## Desenvolvimento
 
-### Executar Testes
+### Testes unitários
+
+O projeto possui testes unitários (JUnit 5 + Mockito) cobrindo **Config**, **Controller**, **Domain**, **Repository**, **Service**, **Client** e **Validator**. Relatório em `build/reports/jacoco/test/html/index.html`.
 
 ```bash
-gradlew test
+gradlew test                    # executa os testes
+gradlew jacocoTestReport        # gera relatório de cobertura
+gradlew jacocoTestCoverageVerification 
 ```
 
 ### Gerar Documentação REST Docs
