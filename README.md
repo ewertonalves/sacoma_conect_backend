@@ -100,10 +100,7 @@ gradlew.bat build
 ### Modo de Desenvolvimento
 
 ```bash
-# Windows
-gradlew.bat bootRun
-
-# Linux/Mac
+# Linux/Mac/Windows
 ./gradlew bootRun
 ```
 

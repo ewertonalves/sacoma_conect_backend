@@ -110,7 +110,7 @@ public class SecurityConfig {
 		String allowedOrigins = System.getenv("ALLOWED_ORIGINS");
 		if (allowedOrigins == null || allowedOrigins.isEmpty()) {
 			// Padrão para desenvolvimento
-			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:4200"));
+			configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:4200", "http://localhost:5173"));
 		} else {
 			configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
 		}
