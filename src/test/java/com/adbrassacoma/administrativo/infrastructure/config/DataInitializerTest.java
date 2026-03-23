@@ -9,7 +9,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 
@@ -31,9 +30,6 @@ class DataInitializerTest {
 
     @MockitoBean
     private TelaPermissaoDiscoveryService telaPermissaoDiscoveryService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Test
     void runNaoDeveLancarExcecaoQuandoAdminNaoExiste() throws Exception {

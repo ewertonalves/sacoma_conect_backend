@@ -6,6 +6,7 @@ import com.adbrassacoma.administrativo.domain.model.Membros;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -16,4 +17,6 @@ public interface FinanceiroRepository extends JpaRepository<Financeiro, Long> {
     List<Financeiro> findByMembro(Membros membro);
     
     List<Financeiro> findByMembroId(Long membroId);
+    
+    List<Financeiro> findByDataRegistroBetween(LocalDateTime dataInicio, LocalDateTime dataFim);
 }

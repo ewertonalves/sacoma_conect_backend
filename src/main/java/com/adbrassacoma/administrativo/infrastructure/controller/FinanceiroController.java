@@ -1,10 +1,12 @@
 package com.adbrassacoma.administrativo.infrastructure.controller;
 
 import com.adbrassacoma.administrativo.domain.enums.TipoFinanceiro;
+import com.adbrassacoma.administrativo.domain.enums.TipoPeriodoRelatorio;
 import com.adbrassacoma.administrativo.domain.service.FinanceiroService;
 import com.adbrassacoma.administrativo.infrastructure.dto.request.AtualizarFinanceiroRequest;
 import com.adbrassacoma.administrativo.infrastructure.dto.request.CadastroFinanceiroRequest;
 import com.adbrassacoma.administrativo.infrastructure.dto.response.FinanceiroResponse;
+import com.adbrassacoma.administrativo.infrastructure.dto.response.RelatorioFinanceiroResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,8 +14,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +27,7 @@ import java.util.Map;
 @RequestMapping("/api/financeiro")
 @Tag(name = "Financeiro", description = "Endpoints para gerenciamento financeiro")
 public class FinanceiroController {
-    
+
     private final FinanceiroService financeiroService;
 
     @PostMapping
@@ -81,10 +85,28 @@ public class FinanceiroController {
         return ResponseEntity.ok(result);
     }
 
+    @GetMapping("/relatorio")
+    @Operation(summary = "Dados para relatório PDF", description = "Retorna os dados financeiros do período para montagem do relatório em PDF no front-end. "
+            +
+            "Tipos: PERSONALIZADO (dataInicial e dataFinal obrigatórias), SEMANAL (semana da dataInicial), MENSAL (mês da dataInicial).")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<Map<String, Object>> obterDadosRelatorio(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicial,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFinal,
+            @RequestParam TipoPeriodoRelatorio tipoPeriodo) {
+        RelatorioFinanceiroResponse relatorio = financeiroService.obterDadosRelatorio(dataInicial, dataFinal,
+                tipoPeriodo);
+        Map<String, Object> result = new HashMap<>();
+        result.put("message", "Dados do relatório obtidos com sucesso!");
+        result.put("data", relatorio);
+        return ResponseEntity.ok(result);
+    }
+
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar registro financeiro", description = "Atualiza os dados de um registro financeiro existente")
     @SecurityRequirement(name = "Bearer Authentication")
-    public ResponseEntity<Map<String, Object>> atualizar(@PathVariable Long id, @Valid @RequestBody AtualizarFinanceiroRequest request) {
+    public ResponseEntity<Map<String, Object>> atualizar(@PathVariable Long id,
+            @Valid @RequestBody AtualizarFinanceiroRequest request) {
         FinanceiroResponse financeiro = financeiroService.atualizar(id, request);
         Map<String, Object> result = new HashMap<>();
         result.put("message", "Registro financeiro atualizado com sucesso!");
@@ -102,4 +124,3 @@ public class FinanceiroController {
         return ResponseEntity.status(HttpStatus.NO_CONTENT).body(result);
     }
 }
-
