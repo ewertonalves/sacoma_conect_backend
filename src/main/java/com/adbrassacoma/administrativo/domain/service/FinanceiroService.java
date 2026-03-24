@@ -1,7 +1,8 @@
 package com.adbrassacoma.administrativo.domain.service;
 
-import com.adbrassacoma.administrativo.domain.enums.TipoFinanceiro;
+import com.adbrassacoma.administrativo.domain.enums.TipoMovimentacaoFinanceira;
 import com.adbrassacoma.administrativo.domain.enums.TipoPeriodoRelatorio;
+import com.adbrassacoma.administrativo.domain.model.CodigoFinanceiroDefinicao;
 import com.adbrassacoma.administrativo.domain.model.Financeiro;
 import com.adbrassacoma.administrativo.domain.model.Membros;
 import com.adbrassacoma.administrativo.infrastructure.dto.request.AtualizarFinanceiroRequest;
@@ -25,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -33,13 +35,18 @@ public class FinanceiroService {
 
     private final FinanceiroRepository financeiroRepository;
     private final MembrosRepository membrosRepository;
+    private final CodigoFinanceiroCatalog codigoFinanceiroCatalog;
 
     @Transactional
     public FinanceiroResponse cadastrar(CadastroFinanceiroRequest request) {
-        log.info("Iniciando cadastro de registro financeiro. Tipo: {}, Entrada: {}, Saída: {}",
-                request.tipo(), request.entrada(), request.saida());
+        CodigoFinanceiroDefinicao definicao = resolverCodigo(request.codigoFinanceiro());
 
-        validarValores(request.entrada(), request.saida());
+        BigDecimal entrada = request.entrada() != null ? request.entrada() : BigDecimal.ZERO;
+        BigDecimal saida = request.saida() != null ? request.saida() : BigDecimal.ZERO;
+        validarValoresPorTipo(definicao.tipo(), entrada, saida);
+
+        log.info("Iniciando cadastro de registro financeiro. Código: {}, tipo: {}, Entrada: {}, Saída: {}",
+                definicao.codigo(), definicao.tipo(), entrada, saida);
 
         Membros membro = null;
         if (request.membroId() != null) {
@@ -52,16 +59,18 @@ public class FinanceiroService {
         }
 
         Financeiro financeiro = Financeiro.builder()
-                .entrada(request.entrada() != null ? request.entrada() : BigDecimal.ZERO)
-                .saida(request.saida() != null ? request.saida() : BigDecimal.ZERO)
-                .tipo(request.tipo())
+                .codigoFinanceiro(definicao.codigo())
+                .tipo(definicao.tipo())
+                .categoria(definicao.categoria())
+                .entrada(entrada)
+                .saida(saida)
                 .observacao(request.observacao())
                 .membro(membro)
                 .build();
 
         financeiro = financeiroRepository.save(financeiro);
-        log.info("Registro financeiro cadastrado com sucesso. ID: {}, Tipo: {}", financeiro.getId(),
-                financeiro.getTipo());
+        log.info("Registro financeiro cadastrado com sucesso. ID: {}, código: {}", financeiro.getId(),
+                financeiro.getCodigoFinanceiro());
 
         return toFinanceiroResponse(financeiro);
     }
@@ -81,7 +90,7 @@ public class FinanceiroService {
     }
 
     @Transactional(readOnly = true)
-    public List<FinanceiroResponse> buscarPorTipo(TipoFinanceiro tipo) {
+    public List<FinanceiroResponse> buscarPorTipo(TipoMovimentacaoFinanceira tipo) {
         List<Financeiro> financeiros = financeiroRepository.findByTipo(tipo);
 
         if (financeiros.isEmpty()) {
@@ -121,7 +130,10 @@ public class FinanceiroService {
                     return new FinanceiroNaoEncontradoException("Financeiro não encontrado com ID: " + id);
                 });
 
-        validarValores(request.entrada(), request.saida());
+        CodigoFinanceiroDefinicao definicao = resolverCodigo(request.codigoFinanceiro());
+        BigDecimal entrada = request.entrada() != null ? request.entrada() : BigDecimal.ZERO;
+        BigDecimal saida = request.saida() != null ? request.saida() : BigDecimal.ZERO;
+        validarValoresPorTipo(definicao.tipo(), entrada, saida);
 
         Membros membro = null;
         if (request.membroId() != null) {
@@ -134,15 +146,17 @@ public class FinanceiroService {
                     });
         }
 
-        financeiro.setEntrada(request.entrada() != null ? request.entrada() : BigDecimal.ZERO);
-        financeiro.setSaida(request.saida() != null ? request.saida() : BigDecimal.ZERO);
-        financeiro.setTipo(request.tipo());
+        financeiro.setCodigoFinanceiro(definicao.codigo());
+        financeiro.setTipo(definicao.tipo());
+        financeiro.setCategoria(definicao.categoria());
+        financeiro.setEntrada(entrada);
+        financeiro.setSaida(saida);
         financeiro.setObservacao(request.observacao());
         financeiro.setMembro(membro);
 
         financeiro = financeiroRepository.save(financeiro);
-        log.info("Registro financeiro atualizado com sucesso. ID: {}, Tipo: {}", financeiro.getId(),
-                financeiro.getTipo());
+        log.info("Registro financeiro atualizado com sucesso. ID: {}, código: {}", financeiro.getId(),
+                financeiro.getCodigoFinanceiro());
 
         return toFinanceiroResponse(financeiro);
     }
@@ -225,17 +239,40 @@ public class FinanceiroService {
                 saldo);
     }
 
-    private void validarValores(BigDecimal entrada, BigDecimal saida) {
-        if (entrada == null && saida == null) {
-            throw new IllegalArgumentException("É necessário informar pelo menos um valor de entrada ou saída");
+    private CodigoFinanceiroDefinicao resolverCodigo(Integer codigo) {
+        if (codigo == null) {
+            throw new IllegalArgumentException("Código financeiro é obrigatório");
+        }
+        return codigoFinanceiroCatalog.buscar(codigo)
+                .orElseThrow(() -> new IllegalArgumentException("Código financeiro inválido: " + codigo));
+    }
+
+    private void validarValoresPorTipo(TipoMovimentacaoFinanceira tipo, BigDecimal entrada, BigDecimal saida) {
+        final BigDecimal valorEntrada = Objects.requireNonNullElse(entrada, BigDecimal.ZERO);
+        final BigDecimal valorSaida = Objects.requireNonNullElse(saida, BigDecimal.ZERO);
+
+        if (valorEntrada.signum() < 0 || valorSaida.signum() < 0) {
+            throw new IllegalArgumentException("Valores de entrada e saída não podem ser negativos");
         }
 
-        if (entrada != null && entrada.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("O valor de entrada não pode ser negativo");
-        }
+        final boolean temEntrada = valorEntrada.signum() > 0;
+        final boolean temSaida = valorSaida.signum() > 0;
 
-        if (saida != null && saida.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("O valor de saída não pode ser negativo");
+        switch (tipo) {
+            case ENTRADA -> {
+                if (!temEntrada || temSaida) {
+                    throw new IllegalArgumentException(!temEntrada
+                            ? "Para código de entrada, o valor de entrada deve ser maior que zero"
+                            : "Para código de entrada, o valor de saída deve ser zero");
+                }
+            }
+            case SAIDA -> {
+                if (!temSaida || temEntrada) {
+                    throw new IllegalArgumentException(!temSaida
+                            ? "Para código de saída, o valor de saída deve ser maior que zero"
+                            : "Para código de saída, o valor de entrada deve ser zero");
+                }
+            }
         }
     }
 
@@ -248,11 +285,18 @@ public class FinanceiroService {
                     CpfValidator.format(financeiro.getMembro().getCpf()));
         }
 
+        String descricaoCodigo = codigoFinanceiroCatalog.buscar(financeiro.getCodigoFinanceiro())
+                .map(CodigoFinanceiroDefinicao::descricao)
+                .orElse("");
+
         return new FinanceiroResponse(
                 financeiro.getId(),
+                financeiro.getCodigoFinanceiro(),
+                descricaoCodigo,
+                financeiro.getTipo(),
+                financeiro.getCategoria(),
                 financeiro.getEntrada(),
                 financeiro.getSaida(),
-                financeiro.getTipo(),
                 financeiro.getObservacao(),
                 financeiro.getDataRegistro(),
                 membroResponse);

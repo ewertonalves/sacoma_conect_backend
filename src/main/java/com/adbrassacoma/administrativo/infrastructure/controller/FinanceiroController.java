@@ -1,10 +1,12 @@
 package com.adbrassacoma.administrativo.infrastructure.controller;
 
-import com.adbrassacoma.administrativo.domain.enums.TipoFinanceiro;
+import com.adbrassacoma.administrativo.domain.enums.TipoMovimentacaoFinanceira;
 import com.adbrassacoma.administrativo.domain.enums.TipoPeriodoRelatorio;
+import com.adbrassacoma.administrativo.domain.service.CodigoFinanceiroCatalog;
 import com.adbrassacoma.administrativo.domain.service.FinanceiroService;
 import com.adbrassacoma.administrativo.infrastructure.dto.request.AtualizarFinanceiroRequest;
 import com.adbrassacoma.administrativo.infrastructure.dto.request.CadastroFinanceiroRequest;
+import com.adbrassacoma.administrativo.infrastructure.dto.response.CodigoFinanceiroResponse;
 import com.adbrassacoma.administrativo.infrastructure.dto.response.FinanceiroResponse;
 import com.adbrassacoma.administrativo.infrastructure.dto.response.RelatorioFinanceiroResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +31,20 @@ import java.util.Map;
 public class FinanceiroController {
 
     private final FinanceiroService financeiroService;
+    private final CodigoFinanceiroCatalog codigoFinanceiroCatalog;
+
+    @GetMapping("/codigos")
+    @Operation(summary = "Listar códigos financeiros", description = "Tabela de classificação (aba Código Financeiro)")
+    @SecurityRequirement(name = "Bearer Authentication")
+    public ResponseEntity<Map<String, Object>> listarCodigosFinanceiros() {
+        List<CodigoFinanceiroResponse> codigos = codigoFinanceiroCatalog.listarTodos().stream()
+                .map(d -> new CodigoFinanceiroResponse(d.codigo(), d.descricao(), d.tipo(), d.categoria()))
+                .toList();
+        Map<String, Object> result = new HashMap<>();
+        result.put("message", "Códigos financeiros listados com sucesso!");
+        result.put("data", codigos);
+        return ResponseEntity.ok(result);
+    }
 
     @PostMapping
     @Operation(summary = "Cadastrar novo registro financeiro", description = "Cria um novo registro financeiro no sistema")
@@ -64,9 +80,9 @@ public class FinanceiroController {
     }
 
     @GetMapping("/buscar/tipo/{tipo}")
-    @Operation(summary = "Buscar registros financeiros por tipo", description = "Busca registros financeiros pelo tipo informado")
+    @Operation(summary = "Buscar registros financeiros por tipo de movimentação", description = "ENTRADA ou SAIDA")
     @SecurityRequirement(name = "Bearer Authentication")
-    public ResponseEntity<Map<String, Object>> buscarPorTipo(@PathVariable TipoFinanceiro tipo) {
+    public ResponseEntity<Map<String, Object>> buscarPorTipo(@PathVariable TipoMovimentacaoFinanceira tipo) {
         List<FinanceiroResponse> financeiros = financeiroService.buscarPorTipo(tipo);
         Map<String, Object> result = new HashMap<>();
         result.put("message", "Registros financeiros encontrados com sucesso!");

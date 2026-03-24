@@ -1,6 +1,7 @@
 package com.adbrassacoma.administrativo.infrastructure.controller;
 
-import com.adbrassacoma.administrativo.domain.enums.TipoFinanceiro;
+import com.adbrassacoma.administrativo.domain.enums.CategoriaFinanceira;
+import com.adbrassacoma.administrativo.domain.enums.TipoMovimentacaoFinanceira;
 import com.adbrassacoma.administrativo.domain.service.FinanceiroService;
 import com.adbrassacoma.administrativo.infrastructure.dto.response.FinanceiroResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -35,7 +36,8 @@ class FinanceiroControllerTest {
 
     @Test
     void listarTodosDeveRetornar200() throws Exception {
-        FinanceiroResponse item = new FinanceiroResponse(1L, BigDecimal.ONE, BigDecimal.ZERO, TipoFinanceiro.DIZIMO, null, LocalDateTime.now(), null);
+        FinanceiroResponse item = new FinanceiroResponse(1L, 1, "Dizimo", TipoMovimentacaoFinanceira.ENTRADA,
+                CategoriaFinanceira.DIZIMO, BigDecimal.ONE, BigDecimal.ZERO, null, LocalDateTime.now(), null);
         when(financeiroService.listarTodos()).thenReturn(List.of(item));
 
         mockMvc.perform(get("/api/financeiro"))
@@ -46,7 +48,8 @@ class FinanceiroControllerTest {
 
     @Test
     void buscarPorIdDeveRetornar200() throws Exception {
-        FinanceiroResponse response = new FinanceiroResponse(1L, new BigDecimal("100"), BigDecimal.ZERO, TipoFinanceiro.DIZIMO, "Obs", LocalDateTime.now(), null);
+        FinanceiroResponse response = new FinanceiroResponse(1L, 1, "Dizimo", TipoMovimentacaoFinanceira.ENTRADA,
+                CategoriaFinanceira.DIZIMO, new BigDecimal("100"), BigDecimal.ZERO, "Obs", LocalDateTime.now(), null);
         when(financeiroService.buscarPorId(1L)).thenReturn(response);
 
         mockMvc.perform(get("/api/financeiro/1"))
@@ -56,16 +59,17 @@ class FinanceiroControllerTest {
 
     @Test
     void buscarPorTipoDeveRetornar200() throws Exception {
-        when(financeiroService.buscarPorTipo(TipoFinanceiro.DIZIMO)).thenReturn(List.of());
+        when(financeiroService.buscarPorTipo(TipoMovimentacaoFinanceira.ENTRADA)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/financeiro/buscar/tipo/DIZIMO"))
+        mockMvc.perform(get("/api/financeiro/buscar/tipo/ENTRADA"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void cadastrarDeveRetornar201() throws Exception {
-        String body = "{\"entrada\":100,\"saida\":0,\"tipo\":\"DIZIMO\",\"observacao\":\"Teste\",\"membroId\":null}";
-        FinanceiroResponse saved = new FinanceiroResponse(1L, new BigDecimal("100"), BigDecimal.ZERO, TipoFinanceiro.DIZIMO, "Teste", LocalDateTime.now(), null);
+        String body = "{\"codigoFinanceiro\":1,\"entrada\":100,\"saida\":0,\"observacao\":\"Teste\",\"membroId\":null}";
+        FinanceiroResponse saved = new FinanceiroResponse(1L, 1, "Dizimo", TipoMovimentacaoFinanceira.ENTRADA,
+                CategoriaFinanceira.DIZIMO, new BigDecimal("100"), BigDecimal.ZERO, "Teste", LocalDateTime.now(), null);
         when(financeiroService.cadastrar(any())).thenReturn(saved);
 
         mockMvc.perform(post("/api/financeiro")
