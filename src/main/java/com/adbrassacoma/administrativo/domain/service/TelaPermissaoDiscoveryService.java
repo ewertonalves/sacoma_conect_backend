@@ -149,6 +149,10 @@ public class TelaPermissaoDiscoveryService {
             return null;
         }
 
+        if ("GET".equals(httpMethod) && "/relatorio".equals(methodPath)) {
+            return recurso + "-relatorio-pdf";
+        }
+
         if (methodPath != null) {
             if ("GET".equals(httpMethod) && "/novo".equals(methodPath)) {
                 return recurso + "-novo";
@@ -164,6 +168,10 @@ public class TelaPermissaoDiscoveryService {
 
     private String gerarRotaFrontend(String basePath, String methodPath, String httpMethod) {
         if (methodPath == null || methodPath.isEmpty() || methodPath.equals("/")) {
+            return basePath;
+        }
+
+        if ("GET".equals(httpMethod) && "/relatorio".equals(methodPath)) {
             return basePath;
         }
 

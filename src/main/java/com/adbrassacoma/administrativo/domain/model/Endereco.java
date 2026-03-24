@@ -18,22 +18,22 @@ public class Endereco {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 120)
+    @Column(length = 120)
     private String rua;
 
-    @Column(nullable = false, length = 10)
+    @Column(length = 10)
     private String numero;
 
-    @Column(nullable = false, length = 9)
+    @Column(length = 9)
     private String cep;
 
-    @Column(nullable = false, length = 80)
+    @Column(length = 80)
     private String bairro;
 
-    @Column(nullable = false, length = 100)
+    @Column(length = 100)
     private String cidade;
 
-    @Column(nullable = false, length = 2)
+    @Column(length = 2)
     private String estado;
 
     @Column(length = 120)

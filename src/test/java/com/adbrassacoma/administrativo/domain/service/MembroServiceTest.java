@@ -62,6 +62,20 @@ class MembroServiceTest {
     }
 
     @Test
+    void cadastrarPermiteTodosOsCamposVazios() {
+        CadastroMembroRequest request = new CadastroMembroRequest(null, null, null, null, null, null);
+        when(membrosRepository.save(any())).thenAnswer(i -> i.getArgument(0));
+
+        var response = membroService.cadastrar(request);
+
+        assertNotNull(response);
+        assertNull(response.nome());
+        assertNull(response.endereco());
+        verify(enderecoRepository, never()).save(any());
+        verify(membrosRepository).save(any());
+    }
+
+    @Test
     void cadastrarDeveSalvarERetornarResponse() {
         CadastroMembroRequest request = new CadastroMembroRequest("João", "RG1", "111.444.777-35", "RI1", "Pastor", enderecoRequest());
         when(membrosRepository.findByCpf(any())).thenReturn(Optional.empty());

@@ -32,41 +32,41 @@ public class MembroService {
 
     @Transactional
     public MembroResponse cadastrar(CadastroMembroRequest request) {
-        log.info("Iniciando cadastro de membro. Nome: {}, CPF: {}", request.nome(), request.cpf());
-        
-        validarCpf(request.cpf());
-        validarCpfUnico(request.cpf(), null);
-        validarRgUnico(request.rg(), null);
+        String nome = blankToNull(request.nome());
+        String rg = blankToNull(request.rg());
+        String cpfBruto = blankToNull(request.cpf());
+        String ri = blankToNull(request.ri());
+        String cargo = blankToNull(request.cargo());
 
-        if (request.ri() != null && !request.ri().isBlank()) {
-            validarRiUnico(request.ri(), null);
+        log.info("Iniciando cadastro de membro. Nome: {}, CPF: {}", nome, cpfBruto);
+
+        validarCpf(cpfBruto);
+        validarCpfUnico(cpfBruto, null);
+        validarRgUnico(rg, null);
+
+        if (ri != null) {
+            validarRiUnico(ri, null);
         }
 
-        String cpfLimpo = CpfValidator.unformat(request.cpf());
-        boolean jaExiste = membrosRepository.findByCpf(cpfLimpo).isPresent()
-                || membrosRepository.findByRg(request.rg()).isPresent()
-                || (request.ri() != null && !request.ri().isBlank() && membrosRepository.findByRi(request.ri()).isPresent());
+        String cpfLimpo = CpfValidator.unformat(cpfBruto);
 
-        if (jaExiste) {
-            log.warn("Tentativa de cadastrar membro com CPF, RG ou RI já existente. CPF: {}, RG: {}, RI: {}", 
-                    request.cpf(), request.rg(), request.ri());
-            throw new IllegalArgumentException("Já existe um membro com o mesmo CPF, RG ou RI informado. Não é possível salvar as mesmas informações duas vezes.");
+        Endereco endereco = null;
+        if (request.endereco() != null && !isEnderecoTotalmenteVazio(request.endereco())) {
+            endereco = criarEndereco(normalizeEnderecoRequest(request.endereco()));
+            endereco = enderecoRepository.save(endereco);
         }
-
-        Endereco endereco = criarEndereco(request.endereco());
-        endereco = enderecoRepository.save(endereco);
 
         Membros membro = Membros.builder()
-                .nome(request.nome())
-                .rg(request.rg())
+                .nome(nome)
+                .rg(rg)
                 .cpf(cpfLimpo)
-                .ri(request.ri())
-                .cargo(request.cargo())
+                .ri(ri)
+                .cargo(cargo)
                 .endereco(endereco)
                 .build();
 
         membro = membrosRepository.save(membro);
-        log.info("Membro cadastrado com sucesso. ID: {}, Nome: {}, CPF: {}", membro.getId(), membro.getNome(), request.cpf());
+        log.info("Membro cadastrado com sucesso. ID: {}, Nome: {}, CPF: {}", membro.getId(), membro.getNome(), cpfBruto);
 
         return toMembroResponse(membro);
     }
@@ -134,7 +134,14 @@ public class MembroService {
         membro.setRi(request.ri());
         membro.setCargo(request.cargo());
 
-        atualizarEndereco(membro.getEndereco(), request.endereco());
+        if (membro.getEndereco() == null) {
+            if (request.endereco() != null && !isEnderecoTotalmenteVazio(request.endereco())) {
+                Endereco novo = criarEndereco(normalizeEnderecoRequest(request.endereco()));
+                membro.setEndereco(enderecoRepository.save(novo));
+            }
+        } else if (request.endereco() != null) {
+            atualizarEndereco(membro.getEndereco(), normalizeEnderecoRequest(request.endereco()));
+        }
 
         membro = membrosRepository.save(membro);
         log.info("Membro atualizado com sucesso. ID: {}, Nome: {}", membro.getId(), membro.getNome());
@@ -156,6 +163,9 @@ public class MembroService {
     }
 
     private void validarCpf(String cpf) {
+        if (cpf == null || cpf.isBlank()) {
+            return;
+        }
         if (!CpfValidator.isValid(cpf)) {
             throw new CpfInvalidoException("CPF inválido: " + cpf);
         }
@@ -163,27 +173,36 @@ public class MembroService {
 
     private void validarCpfUnico(String cpf, Long idExcluir) {
         String cpfLimpo = CpfValidator.unformat(cpf);
+        if (cpfLimpo == null) {
+            return;
+        }
         membrosRepository.findByCpf(cpfLimpo)
                 .ifPresent(membro -> {
-                    if (!membro.getId().equals(idExcluir)) {
+                    if (idExcluir == null || !membro.getId().equals(idExcluir)) {
                         throw new CpfJaCadastradoException("CPF já cadastrado no sistema");
                     }
                 });
     }
 
     private void validarRgUnico(String rg, Long idExcluir) {
+        if (rg == null || rg.isBlank()) {
+            return;
+        }
         membrosRepository.findByRg(rg)
                 .ifPresent(membro -> {
-                    if (!membro.getId().equals(idExcluir)) {
+                    if (idExcluir == null || !membro.getId().equals(idExcluir)) {
                         throw new RgJaCadastradoException("RG já cadastrado no sistema");
                     }
                 });
     }
 
     private void validarRiUnico(String ri, Long idExcluir) {
+        if (ri == null || ri.isBlank()) {
+            return;
+        }
         membrosRepository.findByRi(ri)
                 .ifPresent(membro -> {
-                    if (!membro.getId().equals(idExcluir)) {
+                    if (idExcluir == null || !membro.getId().equals(idExcluir)) {
                         throw new RiJaCadastradoException("RI já cadastrado no sistema");
                     }
                 });
@@ -211,7 +230,43 @@ public class MembroService {
         endereco.setComplemento(request.complemento());
     }
 
+    private static String blankToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private static boolean isEnderecoTotalmenteVazio(EnderecoRequest r) {
+        if (r == null) {
+            return true;
+        }
+        return isBlank(r.rua()) && isBlank(r.numero()) && isBlank(r.cep()) && isBlank(r.bairro())
+                && isBlank(r.cidade()) && isBlank(r.estado()) && isBlank(r.complemento());
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
+    private static EnderecoRequest normalizeEnderecoRequest(EnderecoRequest r) {
+        if (r == null) {
+            return null;
+        }
+        return new EnderecoRequest(
+                blankToNull(r.rua()),
+                blankToNull(r.numero()),
+                blankToNull(r.cep()),
+                blankToNull(r.bairro()),
+                blankToNull(r.cidade()),
+                blankToNull(r.estado()),
+                blankToNull(r.complemento()));
+    }
+
     private MembroResponse toMembroResponse(Membros membro) {
+        EnderecoResponse enderecoResponse = membro.getEndereco() != null
+                ? toEnderecoResponse(membro.getEndereco())
+                : null;
         return new MembroResponse(
                 membro.getId(),
                 membro.getNome(),
@@ -219,8 +274,7 @@ public class MembroService {
                 CpfValidator.format(membro.getCpf()),
                 membro.getRi(),
                 membro.getCargo(),
-                toEnderecoResponse(membro.getEndereco())
-        );
+                enderecoResponse);
     }
 
     private EnderecoResponse toEnderecoResponse(Endereco endereco) {

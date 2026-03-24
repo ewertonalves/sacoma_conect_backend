@@ -18,13 +18,13 @@ public class Membros {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 120)
+    @Column(length = 120)
     private String nome;
 
-    @Column(nullable = false, unique = true, length = 20)
+    @Column(unique = true, length = 20)
     private String rg;
 
-    @Column(nullable = false, unique = true, length = 14)
+    @Column(unique = true, length = 14)
     private String cpf;
 
     @Column(length = 20)
@@ -34,7 +34,7 @@ public class Membros {
     private String cargo;
 
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "endereco_id", nullable = false)
+    @JoinColumn(name = "endereco_id")
     private Endereco endereco;
 
 }

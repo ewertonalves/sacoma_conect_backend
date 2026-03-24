@@ -35,6 +35,15 @@ class TelaPermissaoDiscoveryServiceTest {
     }
 
     @Test
+    void descobrirTelasDeveIncluirRelatorioPdfFinanceiro() {
+        List<TelaPermissao> telas = discoveryService.descobrirTelas();
+
+        boolean hasRelatorio = telas.stream()
+                .anyMatch(t -> "financeiro-relatorio-pdf".equals(t.getId()));
+        assertTrue(hasRelatorio, "Deveria conter permissão de relatório PDF do financeiro");
+    }
+
+    @Test
     void descobrirTelasDeveRetornarTelasComIdNomeERota() {
         List<TelaPermissao> telas = discoveryService.descobrirTelas();
 
